@@ -10,7 +10,7 @@ from utils import (text_for_reply_to_bad_input, get_task_id, delete_msg,
                    update_message_task, update_message_task_edit,
                    ALL_MESSAGE_TYPES)
 
-
+# Файл нужно переименовать на handlers.py
 @bot.callback_query_handler(func=lambda call: call.data.startswith("task_"))
 def show_task(call):
     task_id = get_task_id(call.data)
@@ -19,11 +19,12 @@ def show_task(call):
 
 @bot.message_handler(commands=['view_tasks'])
 def view_tasks_handler(message):
-    delete_msg(message.chat.id, message.message_id)
+    delete_msg(message.chat.id, message.message_id) # Это иногда падает с таймаутом, его нужно либо обработать через try/except, но я думаю лучше избавить от удалений
 
     if mess_from_db := get_message("tasklist"):
         del_message(mess_from_db.id)
         delete_msg(message.chat.id, mess_from_db.id)
+
     add_message(msg_id=message.message_id + 1, msg_name="tasklist")
     show_tasklist(message)
 
@@ -108,7 +109,7 @@ def edit_title(call):
         lambda msg: update_title(msg, task_id, start_msg_id)
     )
 
-
+# Все функции которые не помечены декоратором callback_query_handler нужно вынести в services.py
 def update_title(message, task_id, start_msg_id):
     if message.content_type != 'text' or message.text.startswith('/'):
         bot.reply_to(
@@ -187,6 +188,7 @@ def update_description(message, task_id, start_msg_id):
 @bot.callback_query_handler(
     func=lambda call: call.data.startswith("edit_all"))
 def edit_all(call):
+    # Тут бы я сделал так же как я отрефакторил ниже, это уменьшает табы, и легче код читать
     if mess_from_db := get_message("tasklist"):
         if mess_from_db.id == call.message.id:
             del_message(mess_from_db.id)
@@ -260,20 +262,22 @@ def update_all(message, task_id, start_msg_id, title):
 # - Команды [/start, /help] -
 @bot.message_handler(commands=['start', 'help'])
 def show_about(message):
-    delete_msg(message.chat.id, message.id)
+    delete_msg(message.chat.id, message.id) # Выглядит странно, зачем вообще удаляем сообщение? Ты удаляешь мое сообщение команду но при этом несколько раз шлешь привет. Я бы убирал в целом твой подход с удалением сообщений, т.к. это не подходит формату бота, он для этого не создан.
 
     bot.send_message(
         chat_id=message.chat.id,
         text=f"Привет {message.chat.first_name}!\n"
-             "Я твой персональный ToDo-бот"
+             "Я твой персональный ToDo-бот" # Нужно чет информативнее! а то не понятно что делать дальше после хелпа.
     )
 
 
-def add(message):
-    if mess_from_db := get_message("tasklist"):
-        if mess_from_db.id == message.id:
-            del_message(mess_from_db.id)
-            delete_msg(message.chat.id, mess_from_db.id)
+def add(message): # Название функции плохое, что значит add?
+    # Предлагаю сделать так
+    mess_from_db = get_message("tasklist")
+
+    if mess_from_db and mess_from_db.id == message.id:
+        del_message(mess_from_db.id)
+        delete_msg(message.chat.id, mess_from_db.id)
 
 
     start_msg_id = message.message_id + 1
@@ -345,7 +349,7 @@ def handle(message):
 
 
 
-
+# Это нужно вынести в main.py и там не забыть сделать импорт from services import *
 if __name__ == "__main__":
     bot.skip_pending = True
     bot.polling()

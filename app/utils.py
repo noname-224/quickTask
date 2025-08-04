@@ -6,7 +6,7 @@ from .keyboards import create_kb_task, create_kb_task_edit, create_kb_tasklist
 from database.db_funcs import get_current_tasks, get_task_by_id
 from database.init_db import Task
 
-
+# CONSTS
 ALL_MESSAGE_TYPES = [
     'text', 'photo', 'video', 'audio', 'document', 'sticker','animation',
     'voice', 'video_note', 'contact', 'location','venue', 'poll', 'dice',
@@ -34,9 +34,11 @@ def text_for_reply_to_bad_input(for_what: str) -> str:
             f"отправьте текстовое сообщение для {for_what} задачи! "
             f"(без специальных символов)")
 
+
 def get_task_id(call_data) -> Task.id:
     """returns the Task.id by splitting call.data"""
     return int(call_data.split("_")[-1])
+
 
 def delete_msg(chat_id, message_id):
     try:

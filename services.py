@@ -3,12 +3,12 @@ from database.db_funcs import (add_new_task, get_task_by_id,
                                mark_task_completed, mark_task_uncompleted,
                                delete_task, edit_task,
                                add_message, get_message, del_message)
-from keyboards import create_kb_cancel_to_edit, create_kb_cancel_to_add
-from weather.weather import main
+from keyboards import create_kb_cancel_to_add
 from utils import (text_for_reply_to_bad_input, get_task_id, delete_msg,
                    show_tasklist, update_tasklist, show_message_task,
                    update_message_task, update_message_task_edit,
                    ALL_MESSAGE_TYPES)
+from weather.weather import main
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("task_"))

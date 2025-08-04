@@ -1,10 +1,10 @@
 from telebot.apihelper import ApiTelegramException
 
-from keyboards import create_kb_task, create_kb_task_edit, create_kb_tasklist
+from .bot import bot
+from .keyboards import create_kb_task, create_kb_task_edit, create_kb_tasklist
 
 from database.db_funcs import get_current_tasks, get_task_by_id
 from database.init_db import Task
-from bot import bot
 
 
 ALL_MESSAGE_TYPES = [

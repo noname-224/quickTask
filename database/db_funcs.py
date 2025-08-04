@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database.init_db import Task, Message, engine
+from .init_db import engine, Task
 
 
 # ---------- Task
@@ -64,25 +64,3 @@ def edit_task(task_id, title=None, description=None):
             task.description = description
 
         session.commit()
-
-
-# ---------- Message
-def add_message(msg_id, msg_name):
-    with Session(engine) as session:
-        message = Message(id=msg_id, name=msg_name)
-        session.add(message)
-        session.commit()
-
-
-def del_message(msg_id):
-    with Session(engine) as session:
-        if message := session.get(Message, msg_id):
-            session.delete(message)
-            session.commit()
-
-
-def get_message(msg_name) -> Message | None:
-    with Session(engine) as session:
-        stmt = select(Message).where(Message.name == msg_name)
-        message = session.scalars(stmt).first()
-        return message

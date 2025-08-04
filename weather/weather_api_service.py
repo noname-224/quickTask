@@ -7,10 +7,9 @@ import json
 import ssl
 import urllib.request
 
-
-from weather.weather import Coordinates
-from weather.weather import ApiServiceError
-from weather.weather import config
+from .coordinates import Coordinates
+from .exceptions import ApiServiceError
+from config import OPENWEATHER_URL_TEMPLATE
 
 
 Celsius = int
@@ -41,7 +40,7 @@ def get_weather(coordinates: Coordinates) -> Weather:
 
 def _get_openweather_response(latitude: float, longitude: float) -> str:
     ssl._create_default_https_context = ssl._create_unverified_context
-    url = config.OPENWEATHER_URL_TEMPLATE.format(
+    url = OPENWEATHER_URL_TEMPLATE.format(
         latitude=latitude, longitude=longitude)
     try:
         return urllib.request.urlopen(url).read()

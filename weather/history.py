@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import TypedDict, List
 import json
 
-from weather.weather import Weather
-from weather.weather import format_weather
+from .weather_api_service import Weather
+from .weather_formatter import format_weather
 
 
 class WeatherStorage:

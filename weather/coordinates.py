@@ -1,7 +1,7 @@
 from geopy.geocoders import Nominatim
 from typing import NamedTuple
 
-from weather.weather import CantGetCoordinates
+from .exceptions import CantGetCoordinates
 
 
 class Coordinates(NamedTuple):

@@ -1,4 +1,4 @@
-from weather.weather_api_service import Weather
+from weather.weather import Weather
 
 
 def format_weather(weather: Weather) -> str:

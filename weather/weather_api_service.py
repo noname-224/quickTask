@@ -8,9 +8,9 @@ import ssl
 import urllib.request
 
 
-from weather.coordinates import Coordinates
-from weather.exceptions import ApiServiceError
-from weather import config
+from weather.weather import Coordinates
+from weather.weather import ApiServiceError
+from weather.weather import config
 
 
 Celsius = int

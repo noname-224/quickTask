@@ -1,11 +1,11 @@
 from pathlib import Path
 
 
-from weather.exceptions import ApiServiceError, CantGetCoordinates
-from weather.history import JSONFileWeatherStorage, save_weather
-from weather.coordinates import get_coordinates
-from weather.weather_api_service import get_weather
-from weather.weather_formatter import format_weather
+from weather.weather import ApiServiceError, CantGetCoordinates
+from weather.weather import JSONFileWeatherStorage, save_weather
+from weather.weather import get_coordinates
+from weather.weather import get_weather
+from weather.weather import format_weather
 
 
 def main(city):

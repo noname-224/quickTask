@@ -25,5 +25,20 @@ class Task(Base):
                 f"status={self.status}, user_id={self.user_id})")
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
+    username: Mapped[str] = mapped_column(String)
+    first_name: Mapped[str] = mapped_column(String)
+    last_name: Mapped[str] = mapped_column(String, default=None)
+    phone_number: Mapped[str] = mapped_column(String, default= )
+
+    def __repr__(self):
+        return (f"User(id={self.id}, username={self.username}, "
+                f"first_name={self.first_name}, last_name={self.last_name}, "
+                f"phone_number={self.phone_number})")
+
+
 engine = create_engine(Settings.DB_PATH, echo=False)
 Base.metadata.create_all(engine)

@@ -19,8 +19,9 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(String)
     last_name: Mapped[Optional[str]] = mapped_column(String)
     is_premium: Mapped[Optional[bool]] = mapped_column(Boolean)
-    # tasks: Mapped[List["Task"]] = relationship(
-    #     back_populates="user", uselist=True)
+
+    tasks: Mapped[List["Task"]] = relationship(
+        back_populates="user", uselist=True)
 
     def __repr__(self):
         return (f"User(id={self.id}, username={self.username}, "
@@ -35,14 +36,14 @@ class Task(Base):
     title: Mapped[str] = mapped_column(String)
     description: Mapped[str] = mapped_column(String)
     status: Mapped[str] = mapped_column(String, default="uncompleted")
-    user_id: Mapped[int] = mapped_column(Integer)
-    # user: Mapped["User"] = relationship(back_populates="tasks", uselist=False)
-    # user_fk: Mapped[int] = mapped_column(ForeignKey("users.id"))
+
+    user: Mapped["User"] = relationship(back_populates="tasks", uselist=False)
+    user_fk: Mapped[int] = mapped_column(ForeignKey("users.id"))
 
     def __repr__(self):
         return (f"Task(id={self.id}, title={self.title}, "
                 f"description={self.description}, "
-                f"status={self.status}, user_id={self.user_id})")
+                f"status={self.status}, user_id={self.user_fk})")
 
 
 engine = create_engine(Settings.DB_PATH, echo=False)

@@ -27,6 +27,7 @@ def add_new_user(
 # ---------- Task
 def add_new_task(title: str, description: str, user_id: User_id) -> None:
     with Session(engine) as session:
+
         task = Task(
             title=title,
             description=description,

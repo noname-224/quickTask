@@ -1,6 +1,6 @@
 from telebot.types import Message, CallbackQuery
 
-from enum_classes import ForWhat
+from .app_enums import ForWhat
 from .bot import bot
 from .keyboards import create_kb_cancel_to_add
 from .utils import (text_for_reply_to_bad_input, get_task_id,

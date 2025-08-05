@@ -1,9 +1,8 @@
-from sqlalchemy import select
 from sqlalchemy.orm import Session
-from typing import Sequence
 
 from type_hints import User_id, Task_id
-from .init_db import engine, User, Task
+from .database import engine, User, Task
+from .sql_enums import TaskStatus
 
 
 # ---------- User
@@ -27,24 +26,16 @@ def add_new_user(
 # ---------- Task
 def add_new_task(title: str, description: str, user_id: User_id) -> None:
     with Session(engine) as session:
-
-        task = Task(
-            title=title,
-            description=description,
-            user_id=user_id
-        )
-
-        session.add(task)
+        task = Task(title=title, description=description)
+        user = session.query(User).filter_by(id=user_id).first()
+        user.tasks.append(task)  # ToDo Так и не понял что с этим делать (про подчеркивание)
         session.commit()
 
 
-# Todo оставить так или выйти в None
-def get_current_tasks(user_id: User_id) -> Sequence[Task]:
+def get_current_tasks(user_id: User_id) -> list[Task]:
     with Session(engine) as session:
-        stmt = select(Task).where(Task.user_id == user_id)
-        tasks = session.scalars(stmt).fetchall()
-        print(tasks)
-        print(type(tasks))
+        user = session.get(User, user_id)
+        tasks = list(user.tasks)  # ToDo Так и не понял что с этим делать (про подчеркивание)
         return tasks
 
 
@@ -57,14 +48,14 @@ def get_task_by_id(task_id: Task_id) -> Task | None:
 def mark_task_completed(task_id: Task_id) -> None:
     with Session(engine) as session:
         task = session.get(Task, task_id)
-        task.status = "completed"
+        task.status = TaskStatus.COMPLETED  # ToDo Это правильно? (я про Enum)
         session.commit()
 
 
 def mark_task_uncompleted(task_id: Task_id) -> None:
     with Session(engine) as session:
         task = session.get(Task, task_id)
-        task.status = "uncompleted"
+        task.status = TaskStatus.UNCOMPLETED   # ToDo Это правильно? (я про Enum)
         session.commit()
 
 

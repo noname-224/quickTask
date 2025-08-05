@@ -1,6 +1,6 @@
 from enum import Enum
 
 
-class ForWhat(Enum):
+class ForWhat(str, Enum):
     TITLE = "названия"
     DESCRIPTION = "описания"

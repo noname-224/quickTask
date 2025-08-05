@@ -5,7 +5,7 @@ from typing import Optional
 from .bot import bot
 from .keyboards import create_kb_task, create_kb_task_edit, create_kb_tasklist
 from database.db_funcs import get_current_tasks, get_task_by_id
-from enum_classes import ForWhat
+from .app_enums import ForWhat
 from type_hints import Id, Task_id
 
 

@@ -19,12 +19,10 @@ def main(city):
         print(f"Не удалось получить погоду по координатам {coordinates}")
         exit(1)
 
-    save_weather(
-        weather,
-        JSONFileWeatherStorage(Path.cwd() / "history.json")
-    )
-    print(Path.cwd())
-
+    # save_weather(
+    #     weather,
+    #     JSONFileWeatherStorage(Path.cwd() / "history.json")
+    # )
     return format_weather(weather)
 
 

@@ -1,7 +1,12 @@
+from typing import Sequence
+
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+from database.init_db import Task
+from type_hints import Task_id
 
-def create_kb_task(task) -> InlineKeyboardMarkup:
+
+def create_kb_task(task: Task) -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton(text="Назад", callback_data="return"))
     keyboard.row(
@@ -24,7 +29,7 @@ def create_kb_task(task) -> InlineKeyboardMarkup:
     return keyboard
 
 
-def create_kb_tasklist(tasks):
+def create_kb_tasklist(tasks: Sequence[Task]) -> InlineKeyboardMarkup:
 
     keyboard = InlineKeyboardMarkup()
     for task in tasks:
@@ -44,7 +49,7 @@ def create_kb_tasklist(tasks):
     return keyboard
 
 
-def create_kb_task_edit(task_id):
+def create_kb_task_edit(task_id: Task_id) -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton(
         text="Назад", callback_data=f"return_to_task_{task_id}"))
@@ -57,14 +62,14 @@ def create_kb_task_edit(task_id):
     return keyboard
 
 
-def create_kb_cancel_to_add():
+def create_kb_cancel_to_add() -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton(
         text="Отменить", callback_data="cancel_adding"))
     return keyboard
 
 
-def create_kb_cancel_to_edit():
+def create_kb_cancel_to_edit() -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton(
         text="Отменить", callback_data="cancel_editing"))

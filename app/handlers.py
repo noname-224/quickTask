@@ -1,6 +1,7 @@
 from telebot.types import Message, CallbackQuery
 
-from .app_enums import ForWhat
+from helpers.exceptions import UserNotFound
+from .app_enums import TextAddition
 from .bot import bot
 from .keyboards import create_kb_cancel_to_add
 from .utils import (text_for_reply_to_bad_input, get_task_id,
@@ -9,7 +10,7 @@ from .utils import (text_for_reply_to_bad_input, get_task_id,
 from database.db_funcs import (add_new_user, add_new_task, get_task_by_id,
                                mark_task_completed, mark_task_uncompleted,
                                delete_task, edit_task)
-from type_hints import Id
+from helpers.type_hints import TaskId, MessageId
 from weather.weather import main
 
 
@@ -24,9 +25,9 @@ def view_tasks_handler(message: Message) -> None:
     show_tasklist(message)
 
 
-# @bot.callback_query_handler(func=lambda call: call.data == "remove_tasklist")
-# def remove_tasklist(call):
-#     delete_msg(call.message.chat.id, call.message.id)
+@bot.callback_query_handler(func=lambda call: call.data == "remove_tasklist")
+def remove_tasklist(call):
+    bot.delete_message(call.message.chat.id, call.message.id)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "add_task")
@@ -98,10 +99,11 @@ def edit_title(call: CallbackQuery) -> None:
     )
 
 
-def update_title(message: Message, task_id: Id, start_msg_id: Id) -> None:
+def update_title(
+        message: Message, task_id: TaskId, start_msg_id: MessageId) -> None:
     if message.content_type != 'text' or message.text.startswith('/'):
         bot.reply_to(
-            message=message,text=text_for_reply_to_bad_input(ForWhat.TITLE),)
+            message=message,text=text_for_reply_to_bad_input(TextAddition.TITLE))
         bot.register_next_step_handler(
             message, lambda msg: update_title(msg, task_id, start_msg_id))
         return
@@ -141,11 +143,11 @@ def edit_description(call: CallbackQuery) -> None:
     )
 
 def update_description(
-        message: Message, task_id: Id, start_msg_id: Id) -> None:
+        message: Message, task_id: TaskId, start_msg_id: MessageId) -> None:
     if message.content_type != 'text' or message.text.startswith('/'):
         bot.reply_to(
             message=message,
-            text=text_for_reply_to_bad_input(ForWhat.DESCRIPTION)
+            text=text_for_reply_to_bad_input(TextAddition.DESCRIPTION)
         )
         bot.register_next_step_handler(
             message,
@@ -188,10 +190,10 @@ def edit_all(call: CallbackQuery) -> None:
     )
 
 def edit_all_get_title(
-        message: Message, task_id: Id, start_msg_id: Id) -> None:
+        message: Message, task_id: TaskId, start_msg_id: MessageId) -> None:
     if message.content_type != 'text' or message.text.startswith('/'):
         bot.reply_to(
-            message=message,text=text_for_reply_to_bad_input(ForWhat.TITLE))
+            message=message,text=text_for_reply_to_bad_input(TextAddition.TITLE))
         bot.register_next_step_handler(
             message,
             lambda msg: edit_all_get_title(msg, task_id, start_msg_id)
@@ -214,11 +216,12 @@ def edit_all_get_title(
         message,lambda msg: update_all(msg, task_id, start_msg_id, title))
 
 def update_all(
-        message: Message, task_id: Id, start_msg_id: Id, title: str) -> None:
+        message: Message,
+        task_id: TaskId, start_msg_id: MessageId, title: str) -> None:
     if message.content_type != 'text' or message.text.startswith('/'):
         bot.reply_to(
             message=message,
-            text=text_for_reply_to_bad_input(ForWhat.DESCRIPTION)
+            text=text_for_reply_to_bad_input(TextAddition.DESCRIPTION)
         )
         bot.register_next_step_handler(
             message, lambda msg: update_all(msg, task_id, start_msg_id, title))
@@ -269,10 +272,10 @@ def add(message: Message) -> None:
     bot.register_next_step_handler(
         message, lambda msg: handle_add_title(msg, start_msg_id))
 
-def handle_add_title(message: Message, start_msg_id: Id) -> None:
+def handle_add_title(message: Message, start_msg_id: MessageId) -> None:
     if message.content_type != 'text' or message.text.startswith('/'):
         bot.reply_to(
-            message=message,text=text_for_reply_to_bad_input(ForWhat.TITLE))
+            message=message,text=text_for_reply_to_bad_input(TextAddition.TITLE))
         bot.register_next_step_handler(
             message, lambda msg: handle_add_title(msg, start_msg_id))
         return
@@ -288,11 +291,11 @@ def handle_add_title(message: Message, start_msg_id: Id) -> None:
         message, lambda msg: handle_add_description(msg, title, start_msg_id))
 
 def handle_add_description(
-        message: Message, title: str, start_msg_id: Id) -> None:
+        message: Message, title: str, start_msg_id: MessageId) -> None:
     if message.content_type != 'text' or message.text.startswith('/'):
         bot.reply_to(
             message=message,
-            text=text_for_reply_to_bad_input(ForWhat.DESCRIPTION)
+            text=text_for_reply_to_bad_input(TextAddition.DESCRIPTION)
         )
         bot.register_next_step_handler(
             message, lambda msg: handle_add_description(
@@ -300,8 +303,14 @@ def handle_add_description(
         return
 
     description = message.text
-    add_new_task(title, description, message.chat.id)
-
+    try:
+        add_new_task(title, description, message.chat.id)
+    except UserNotFound:
+        bot.send_message(
+            chat_id=message.chat.id,
+            text="Вы не авторизованы.\n"
+                 "Отправьте команду /start для авторизации"
+        )
     bot.delete_messages(
         message.chat.id, list(range(start_msg_id, message.message_id + 1)))
 

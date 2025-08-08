@@ -4,7 +4,7 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .sql_enums import TaskStatus
-from config import Settings
+from helpers.config import Settings
 
 
 class Base(DeclarativeBase):
@@ -43,9 +43,7 @@ class Task(Base):
     title: Mapped[str]
     description: Mapped[str]
     status: Mapped[TaskStatus] = mapped_column(
-        default=TaskStatus.UNCOMPLETED,
-        server_default=TaskStatus.COMPLETED,
-    )
+        default=TaskStatus.UNCOMPLETED)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user: Mapped["User"] = relationship(
         "User",
@@ -60,5 +58,5 @@ class Task(Base):
 
 
 engine = create_engine(Settings.DB_PATH, echo=False)
-# Base.metadata.drop_all(engine)
+Base.metadata.drop_all(engine)
 Base.metadata.create_all(engine)

@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class ForWhat(str, Enum):
+class TextAddition(StrEnum):
     TITLE = "названия"
     DESCRIPTION = "описания"

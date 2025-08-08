@@ -2,11 +2,12 @@ from telebot.apihelper import ApiTelegramException
 from telebot.types import Message
 from typing import Optional
 
+from helpers.exceptions import UserNotFound
 from .bot import bot
 from .keyboards import create_kb_task, create_kb_task_edit, create_kb_tasklist
 from database.db_funcs import get_current_tasks, get_task_by_id
-from .app_enums import ForWhat
-from type_hints import Id, Task_id
+from .app_enums import TextAddition
+from helpers.type_hints import TaskId, MessageId, ChatId
 
 
 # CONSTS
@@ -27,17 +28,17 @@ def escape_markdown_v2(text: str) -> str:
     return text
 
 
-def text_for_reply_to_bad_input(for_what: ForWhat) -> str:
+def text_for_reply_to_bad_input(for_what: TextAddition) -> str:
     return (f"Пожалуйста, "
-            f"отправьте текстовое сообщение для {for_what.value} задачи! "
+            f"отправьте текстовое сообщение для {for_what} задачи! "
             f"(без специальных символов)")
 
 
-def get_task_id(call_data: Optional[str]) -> Task_id:
+def get_task_id(call_data: Optional[str]) -> TaskId:
     return int(call_data.split("_")[-1])
 
 
-def delete_msg(chat_id: Id, message_id: Id) -> None:
+def delete_msg(chat_id: ChatId, message_id: MessageId) -> None:
     try:
         bot.delete_message(chat_id, message_id)
     except ApiTelegramException:
@@ -46,35 +47,50 @@ def delete_msg(chat_id: Id, message_id: Id) -> None:
 
 
 def show_tasklist(message: Message) -> None:
-    tasks = get_current_tasks(message.chat.id)
-    if tasks:
-        text = "Вот твои задачи.\nНажми чтобы перейти к описанию"
-    else:
-        text = "У тебя нет задач!"
+    try:
+        tasks = get_current_tasks(message.chat.id)
+        if tasks:
+            text = "Вот твои задачи.\nНажми чтобы перейти к описанию"
+        else:
+            print(tasks)
+            text = "У тебя нет задач!"
 
-    bot.send_message(
+        bot.send_message(
+            chat_id=message.chat.id,
+            text=text,
+            reply_markup=create_kb_tasklist(tasks)
+        )
+    except UserNotFound:
+        bot.send_message(
         chat_id=message.chat.id,
-        text=text,
-        reply_markup=create_kb_tasklist(tasks)
-    )
+        text="Ты не авторизован.\n"
+             "Отправь команду /start для авторизации"
+        )
 
 
 def update_tasklist(message: Message) -> None:
-    tasks = get_current_tasks(message.chat.id)
-    if tasks:
-        text = "Вот твои задачи.\nНажми чтобы перейти к описанию"
-    else:
-        text = "У тебя нет задач!"
+    try:
+        tasks = get_current_tasks(message.chat.id)
+        if tasks:
+            text = "Вот твои задачи.\nНажми чтобы перейти к описанию"
+        else:
+            text = "У тебя нет задач!"
 
-    bot.edit_message_text(
+        bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=message.message_id,
+            text=text,
+            reply_markup=create_kb_tasklist(tasks)
+        )
+    except UserNotFound:
+        bot.send_message(
         chat_id=message.chat.id,
-        message_id=message.message_id,
-        text=text,
-        reply_markup=create_kb_tasklist(tasks)
-    )
+        text="Ты не авторизован.\n"
+             "Отправь команду /start для авторизации"
+        )
 
 
-def show_message_task(task_id: Task_id, message: Message) -> None:
+def show_message_task(task_id: TaskId, message: Message) -> None:
     task = get_task_by_id(task_id)
     if task is not None:
         mark = "✅" if task.status == "completed" else "❌"
@@ -88,7 +104,7 @@ def show_message_task(task_id: Task_id, message: Message) -> None:
         update_tasklist(message)
 
 
-def update_message_task(task_id: Task_id, message: Message) -> None:
+def update_message_task(task_id: TaskId, message: Message) -> None:
     task = get_task_by_id(task_id)
     if task is not None:
         mark = "✅" if task.status == "completed" else "❌"
@@ -103,7 +119,7 @@ def update_message_task(task_id: Task_id, message: Message) -> None:
         update_tasklist(message)
 
 
-def update_message_task_edit(task_id: Task_id, message: Message) -> None:
+def update_message_task_edit(task_id: TaskId, message: Message) -> None:
     task = get_task_by_id(task_id)
     if task is not None:
         bot.edit_message_text(

@@ -3,7 +3,7 @@ from typing import Sequence
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from database.database import Task
-from type_hints import Task_id
+from helpers.type_hints import TaskId
 
 
 def create_kb_task(task: Task) -> InlineKeyboardMarkup:
@@ -49,7 +49,7 @@ def create_kb_tasklist(tasks: Sequence[Task]) -> InlineKeyboardMarkup:
     return keyboard
 
 
-def create_kb_task_edit(task_id: Task_id) -> InlineKeyboardMarkup:
+def create_kb_task_edit(task_id: TaskId) -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton(
         text="Назад", callback_data=f"return_to_task_{task_id}"))

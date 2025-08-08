@@ -18,7 +18,7 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
+    id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str]
     first_name: Mapped[str]
     last_name: Mapped[str | None]

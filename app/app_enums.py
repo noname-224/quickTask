@@ -1,6 +1,11 @@
-from enum import StrEnum
+from enum import Enum, StrEnum
 
 
-class TextAddition(StrEnum):
+class TaskAttributeText(StrEnum):
     TITLE = "названия"
     DESCRIPTION = "описания"
+
+
+class MessageUploadMethod(Enum):
+    SEND = True
+    UPDATE = False

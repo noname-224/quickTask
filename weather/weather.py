@@ -4,21 +4,22 @@ from .weather_api_service import get_weather
 from .weather_formatter import format_weather
 
 
-def main(city):
+def get_weather_text(city):
     try:
         coordinates = get_coordinates(city)
     except CantGetCoordinates:
-        print("Не удалось получить координаты")
-        exit(1)
+        return "Не удалось получить координаты"
+
     try:
         weather = get_weather(coordinates)
     except ApiServiceError:
-        print(f"Не удалось получить погоду по координатам {coordinates}")
-        exit(1)
+        return f"Не удалось получить погоду по координатам {coordinates}"
 
     return format_weather(weather)
 
 
+
+
 if __name__ == '__main__':
     name_of_the_city = input()
-    main(name_of_the_city)
+    get_weather_text(name_of_the_city)

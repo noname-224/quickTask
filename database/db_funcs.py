@@ -1,4 +1,4 @@
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from helpers.exceptions import UserNotFound
@@ -8,7 +8,7 @@ from .sql_enums import TaskStatus
 
 
 # ---------- User
-def add_new_user(
+def add_user(
         user_id: UserId, username: str, first_name: str,
         last_name: str | None = None,
         is_premium: bool | None = None) -> None:
@@ -20,13 +20,16 @@ def add_new_user(
             last_name=last_name,
             is_premium=is_premium
         )
+        try:
+            session.add(user)
+            session.commit()
+        except IntegrityError:
+            pass
 
-        session.merge(user)
-        session.commit()
 
 
 # ---------- Task
-def add_new_task(title: str, description: str, user_id: UserId) -> None:
+def add_task(title: str, description: str, user_id: UserId) -> None:
     with Session(engine) as session:
         if user := session.get(User, user_id):
             task = Task(title=title, description=description)
@@ -36,7 +39,7 @@ def add_new_task(title: str, description: str, user_id: UserId) -> None:
             raise UserNotFound
 
 
-def get_current_tasks(user_id: UserId) -> list[Task]:
+def get_tasks(user_id: UserId) -> list[Task]:
     with Session(engine) as session:
         if user := session.get(User, user_id):
             tasks = list(user.tasks)  # ToDo Так и не понял что с этим делать (про подчеркивание)
@@ -45,7 +48,7 @@ def get_current_tasks(user_id: UserId) -> list[Task]:
             raise UserNotFound
 
 
-def get_task_by_id(task_id: TaskId) -> Task | None:
+def get_task(task_id: TaskId) -> Task | None:
     with Session(engine) as session:
         task = session.get(Task, task_id)
         return task
@@ -61,7 +64,7 @@ def mark_task_completed(task_id: TaskId) -> None:
 def mark_task_uncompleted(task_id: TaskId) -> None:
     with Session(engine) as session:
         task = session.get(Task, task_id)
-        task.status = TaskStatus.UNCOMPLETED  # ToDo Это правильно? (я про Enum)
+        task.status = TaskStatus.UNCOMPLETED
         session.commit()
 
 

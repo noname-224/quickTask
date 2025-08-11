@@ -5,6 +5,10 @@ class TaskAttributeText(StrEnum):
     TITLE = "названия"
     DESCRIPTION = "описания"
 
+class CancelledOperationName(StrEnum):
+    ADDITION = "Добавление"
+    EDITING = "Редактирование"
+
 
 class MessageUploadMethod(Enum):
     SEND = True

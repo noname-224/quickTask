@@ -1,4 +1,3 @@
-from telebot.apihelper import ApiTelegramException
 from telebot.types import Message
 from typing import Optional
 
@@ -7,7 +6,7 @@ from app.keyboards import InlineKeyboardCreator
 from database.repositories import TaskRepository
 from domain.enums import TaskAttributeText, MessageUploadMethod
 from domain.exceptions import UserNotFound
-from domain.types import TaskId, MessageId, ChatId
+from domain.types import TaskId
 
 
 # CONSTS
@@ -28,26 +27,20 @@ def escape_markdown_v2(text: str) -> str:
     return text
 
 
+# bot.delete_messages(message.chat.id,list(range(start_msg_id, message.message_id + 1)))
+def delete_messages():
+    pass
+
+
 def text_for_reply_to_bad_input(attribute: TaskAttributeText) -> str:
     return (f"Пожалуйста, "
             f"отправьте текстовое сообщение для {attribute} задачи! "
             f"(без специальных символов)")
 
 
-def get_task_id(call_data: Optional[str]) -> TaskId:
+def get_id(call_data: Optional[str]) -> TaskId:
     return int(call_data.split("_")[-1])
 
-
-def safely_delete_message_from_chat(
-        chat_id: ChatId, message_id: MessageId) -> None:
-    try:
-        bot.delete_message(chat_id, message_id)
-    except ApiTelegramException:
-        bot.send_message(
-            chat_id=chat_id,
-            text="Не удалось удалить сообщения из-за ошибки, "
-                 "пожалуйста удалите вручную"
-        )
 
 def upload_checklist_window(message: Message, upload_method: MessageUploadMethod) -> None:
     try:

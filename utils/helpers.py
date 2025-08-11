@@ -2,12 +2,12 @@ from telebot.apihelper import ApiTelegramException
 from telebot.types import Message
 from typing import Optional
 
-from helpers.exceptions import UserNotFound
-from .bot import bot
-from .keyboards import task_window_buttons, task_edit_window_buttons, checklist_window_buttons
-from database.db_funcs import get_tasks, get_task
-from .app_enums import TaskAttributeText, MessageUploadMethod
-from helpers.type_hints import TaskId, MessageId, ChatId
+from app.bot import bot
+from app.keyboards import InlineKeyboardCreator
+from database.repositories import TaskRepository
+from domain.enums import TaskAttributeText, MessageUploadMethod
+from domain.exceptions import UserNotFound
+from domain.types import TaskId, MessageId, ChatId
 
 
 # CONSTS
@@ -49,11 +49,12 @@ def safely_delete_message_from_chat(
                  "пожалуйста удалите вручную"
         )
 
-
-def upload_checklist_window(
-        message: Message, upload_method: MessageUploadMethod) -> None:
+def upload_checklist_window(message: Message, upload_method: MessageUploadMethod) -> None:
     try:
-        if tasks := get_tasks(message.chat.id):
+        task_repo = TaskRepository()
+        tasks = task_repo.get_all(user_id=message.chat.id)
+
+        if tasks:
             text = "Вот твои задачи.\nНажми чтобы перейти к описанию"
         else:
             text = "У тебя нет задач!"
@@ -62,14 +63,14 @@ def upload_checklist_window(
             bot.send_message(
                 chat_id=message.chat.id,
                 text=text,
-                reply_markup=checklist_window_buttons(tasks)
+                reply_markup=InlineKeyboardCreator.checklist_window_buttons(tasks)
             )
         else:
             bot.edit_message_text(
                 chat_id=message.chat.id,
                 message_id=message.message_id,
                 text=text,
-                reply_markup=checklist_window_buttons(tasks)
+                reply_markup=InlineKeyboardCreator.checklist_window_buttons(tasks)
             )
     except UserNotFound:
         bot.send_message(
@@ -81,7 +82,8 @@ def upload_checklist_window(
 
 def upload_task_window(task_id: TaskId, message: Message,
                        upload_method: MessageUploadMethod) -> None:
-    task = get_task(task_id)
+    task_repo = TaskRepository()
+    task = task_repo.get_one(task_id)
     if task is not None:
         mark = "✅" if task.status == "completed" else "❌"
         if upload_method.value:
@@ -89,7 +91,7 @@ def upload_task_window(task_id: TaskId, message: Message,
                 chat_id=message.chat.id,
                 text=f"Название: {task.title} {mark}\n\n"
                      f"Описание: {task.description}",
-                reply_markup=task_window_buttons(task)
+                reply_markup=InlineKeyboardCreator.task_window_buttons(task)
             )
         else:
             bot.edit_message_text(
@@ -97,21 +99,22 @@ def upload_task_window(task_id: TaskId, message: Message,
                 message_id=message.message_id,
                 text=f"Название: {task.title} {mark}\n\n"
                      f"Описание: {task.description}",
-                reply_markup=task_window_buttons(task)
+                reply_markup=InlineKeyboardCreator.task_window_buttons(task)
             )
     else:
         upload_checklist_window(message, MessageUploadMethod.UPDATE)
 
 
 def upload_task_edit_window(task_id: TaskId, message: Message) -> None:
-    task = get_task(task_id)
+    task_repo = TaskRepository()
+    task = task_repo.get_one(task_id=task_id)
     if task is not None:
         bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=message.message_id,
             text=f"Название: {task.title}\n\n"
                  f"Описание: {task.description}",
-            reply_markup=task_edit_window_buttons(task.id)
+            reply_markup=InlineKeyboardCreator.task_edit_window_buttons(task.id)
         )
     else:
         upload_checklist_window(message, MessageUploadMethod.UPDATE)

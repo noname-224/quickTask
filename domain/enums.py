@@ -9,3 +9,8 @@ class TaskAttributeText(StrEnum):
 class MessageUploadMethod(Enum):
     SEND = True
     UPDATE = False
+
+
+class TaskStatus(StrEnum):
+    COMPLETED = "completed"
+    UNCOMPLETED = "uncompleted"

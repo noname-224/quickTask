@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import create_engine
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase
@@ -5,7 +7,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from domain.enums import TaskStatus
 from config.config import Settings
-
 
 class Base(DeclarativeBase):
     pass
@@ -32,6 +33,7 @@ class Task(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str]
     description: Mapped[str]
+    status_changed_at: Mapped[datetime]
     status: Mapped[TaskStatus] = mapped_column(default=TaskStatus.UNCOMPLETED)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
 
@@ -43,5 +45,5 @@ class Task(Base):
 
 
 engine = create_engine(Settings.DB_PATH, echo=False)
-# Base.metadata.drop_all(engine)
+Base.metadata.drop_all(engine)
 Base.metadata.create_all(engine)

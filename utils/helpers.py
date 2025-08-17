@@ -1,21 +1,16 @@
-from telebot.types import Message
 from typing import Optional
 
-from app.bot import bot
-from app.keyboards import InlineKeyboardCreator
-from database.repositories import TaskRepository
-from domain.enums import TaskAttributeText, MessageUploadMethod
-from domain.exceptions import UserNotFound
-from domain.types import TaskId
-
+from domain.enums import TaskAttributeText
+# from domain.exceptions import UserNotFound
+from domain.types import TaskId, MessageId
 
 # CONSTS
-ALL_MESSAGE_TYPES = [
-    'text', 'photo', 'video', 'audio', 'document', 'sticker','animation',
-    'voice', 'video_note', 'contact', 'location','venue', 'poll', 'dice',
-    'game', 'invoice','successful_payment', 'passport_data', 'chat_member',
-    'chat_join_request'
-]
+# ALL_MESSAGE_TYPES = [
+#     'text', 'photo', 'video', 'audio', 'document', 'sticker','animation',
+#     'voice', 'video_note', 'contact', 'location','venue', 'poll', 'dice',
+#     'game', 'invoice','successful_payment', 'passport_data', 'chat_member',
+#     'chat_join_request'
+# ]
 
 
 # ToDo прикольное решение моей проблемы
@@ -27,87 +22,18 @@ def escape_markdown_v2(text: str) -> str:
     return text
 
 
-# bot.delete_messages(message.chat.id,list(range(start_msg_id, message.message_id + 1)))
-def delete_messages():
-    pass
-
-
 def text_for_reply_to_bad_input(attribute: TaskAttributeText) -> str:
     return (f"Пожалуйста, "
             f"отправьте текстовое сообщение для {attribute} задачи! "
             f"(без специальных символов)")
 
 
-def get_id(call_data: Optional[str]) -> TaskId:
-    return int(call_data.split("_")[-1])
+class GetIdFromCallData:
 
+    @staticmethod
+    def task_id(call_data: Optional[str]) -> TaskId:
+        return int(call_data.split("_")[-1])
 
-def upload_checklist_window(message: Message, upload_method: MessageUploadMethod) -> None:
-    try:
-        task_repo = TaskRepository()
-        tasks = task_repo.get_all(user_id=message.chat.id)
-
-        if tasks:
-            text = "Вот твои задачи.\nНажми чтобы перейти к описанию"
-        else:
-            text = "У тебя нет задач!"
-
-        if upload_method.value:
-            bot.send_message(
-                chat_id=message.chat.id,
-                text=text,
-                reply_markup=InlineKeyboardCreator.checklist_window_buttons(tasks)
-            )
-        else:
-            bot.edit_message_text(
-                chat_id=message.chat.id,
-                message_id=message.message_id,
-                text=text,
-                reply_markup=InlineKeyboardCreator.checklist_window_buttons(tasks)
-            )
-    except UserNotFound:
-        bot.send_message(
-        chat_id=message.chat.id,
-        text="Ты не авторизован.\n"
-             "Отправь команду /start для авторизации"
-        )
-
-
-def upload_task_window(task_id: TaskId, message: Message,
-                       upload_method: MessageUploadMethod) -> None:
-    task_repo = TaskRepository()
-    task = task_repo.get_one(task_id)
-    if task is not None:
-        mark = "✅" if task.status == "completed" else "❌"
-        if upload_method.value:
-            bot.send_message(
-                chat_id=message.chat.id,
-                text=f"Название: {task.title} {mark}\n\n"
-                     f"Описание: {task.description}",
-                reply_markup=InlineKeyboardCreator.task_window_buttons(task)
-            )
-        else:
-            bot.edit_message_text(
-                chat_id=message.chat.id,
-                message_id=message.message_id,
-                text=f"Название: {task.title} {mark}\n\n"
-                     f"Описание: {task.description}",
-                reply_markup=InlineKeyboardCreator.task_window_buttons(task)
-            )
-    else:
-        upload_checklist_window(message, MessageUploadMethod.UPDATE)
-
-
-def upload_task_edit_window(task_id: TaskId, message: Message) -> None:
-    task_repo = TaskRepository()
-    task = task_repo.get_one(task_id=task_id)
-    if task is not None:
-        bot.edit_message_text(
-            chat_id=message.chat.id,
-            message_id=message.message_id,
-            text=f"Название: {task.title}\n\n"
-                 f"Описание: {task.description}",
-            reply_markup=InlineKeyboardCreator.task_edit_window_buttons(task.id)
-        )
-    else:
-        upload_checklist_window(message, MessageUploadMethod.UPDATE)
+    @staticmethod
+    def message_id(call_data: Optional[str]) -> MessageId:
+        return int(call_data.split("_")[-1])

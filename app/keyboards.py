@@ -25,15 +25,16 @@ class InlineKeyboardCreator:
                 text="🗑️ Удалить",
                 callback_data=f"delete_task_from_checklist_{task.id}")
         )
-        if task.status == TaskStatus.UNCOMPLETED:
-            keyboard.add(InlineKeyboardButton(
-                text="✅ Выполнить",
-                callback_data=f"mark_task_completed_{task.id}")
-            )
-        else:
+        if task.status == TaskStatus.COMPLETED:
             keyboard.add(InlineKeyboardButton(
                 text="❌ Отменить выполнение",
                 callback_data=f"mark_task_uncompleted_{task.id}")
+            )
+
+        else:
+            keyboard.add(InlineKeyboardButton(
+                text="✅ Выполнить",
+                callback_data=f"mark_task_completed_{task.id}")
             )
         return keyboard
 

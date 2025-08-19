@@ -51,7 +51,7 @@ class InlineKeyboardCreator:
 
         keyboard.row(
             InlineKeyboardButton(
-                text="✗ Закрыть", callback_data="delete_checklist_window"),
+                text="✖️ Закрыть", callback_data="delete_checklist_window"),
             InlineKeyboardButton(
                 text="➕ Добавить", callback_data="add_task_by_clicking")
         )

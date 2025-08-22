@@ -9,7 +9,7 @@ from domain.types import TaskId, MessageId
 
 class InlineKeyboardCreator:
     @staticmethod
-    def task_window_buttons(task: Task) -> InlineKeyboardMarkup:
+    def create_task_window_buttons(task: Task) -> InlineKeyboardMarkup:
         keyboard = InlineKeyboardMarkup()
         keyboard.add(
             InlineKeyboardButton(
@@ -39,7 +39,7 @@ class InlineKeyboardCreator:
         return keyboard
 
     @staticmethod
-    def checklist_window_buttons(tasks: Sequence[Task]) -> InlineKeyboardMarkup:
+    def create_checklist_window_buttons(tasks: Sequence[Task]) -> InlineKeyboardMarkup:
 
         keyboard = InlineKeyboardMarkup()
         for task in tasks:
@@ -55,11 +55,10 @@ class InlineKeyboardCreator:
             InlineKeyboardButton(
                 text="➕ Добавить", callback_data="add_task_by_clicking")
         )
-
         return keyboard
 
     @staticmethod
-    def task_edit_window_buttons(task_id: TaskId) -> InlineKeyboardMarkup:
+    def create_task_edit_window_buttons(task_id: TaskId) -> InlineKeyboardMarkup:
         keyboard = InlineKeyboardMarkup()
         keyboard.add(InlineKeyboardButton(
             text="↩️️ Назад",
@@ -76,13 +75,13 @@ class InlineKeyboardCreator:
         return keyboard
 
     @staticmethod
-    def cancel_adding_button(start_msg_id: MessageId) -> InlineKeyboardMarkup:
+    def create_cancel_adding_button(start_msg_id: MessageId) -> InlineKeyboardMarkup:
         keyboard = InlineKeyboardMarkup()
         keyboard.add(InlineKeyboardButton(text="↩️ Отменить", callback_data=f"cancel_task_adding_{start_msg_id}"))
         return keyboard
 
     @staticmethod
-    def cancel_editing_button(start_msg_id: MessageId) -> InlineKeyboardMarkup:
+    def create_cancel_editing_button(start_msg_id: MessageId) -> InlineKeyboardMarkup:
         keyboard = InlineKeyboardMarkup()
         keyboard.add(InlineKeyboardButton(text="↩️ Отменить", callback_data=f"cancel_task_editing_{start_msg_id}"))
         return keyboard

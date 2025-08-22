@@ -40,7 +40,7 @@ class TaskRepository:
 
     @staticmethod
     def add(title: str, description: str, user_id: UserId) -> None:
-        task = Task(title=title, description=description, status_changed_at=datetime.now(), user_id=user_id)
+        task = Task(title=title, description=description, user_id=user_id)
         with session_factory() as session:
             session.add(task)
             session.commit()

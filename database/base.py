@@ -9,6 +9,3 @@ class Base(DeclarativeBase):
 
 engine = create_engine(Settings.DB_PATH, echo=False)
 session_factory = sessionmaker(engine)
-
-Base.metadata.drop_all(engine)
-Base.metadata.create_all(engine)

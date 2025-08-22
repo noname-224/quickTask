@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from database.base import Base
+from database.base import Base, engine
 from domain.enums import TaskStatus
 
 
@@ -28,12 +28,16 @@ class Task(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str]
     description: Mapped[str]
-    status_changed_at: Mapped[datetime]
     status: Mapped[TaskStatus] = mapped_column(default=TaskStatus.UNCOMPLETED)
+    status_changed_at: Mapped[datetime] = mapped_column(default=datetime.now)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
 
     user: Mapped["User"] = relationship("User", back_populates="tasks", uselist=False)
 
     def __repr__(self):
-        return (f"Task(id={self.id}, title={self.title}, description={self.description}, status={self.status}, "
-                f"user_id={self.user_id})")
+        return (f"Task(id={self.id}, title={self.title}, description={self.description}, user_id={self.user_id}), "
+                f"status={self.status}, status_changed_at={self.status_changed_at})")
+
+
+# Base.metadata.drop_all(engine)
+Base.metadata.create_all(engine)

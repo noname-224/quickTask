@@ -2,9 +2,9 @@ from dotenv import load_dotenv
 from os import getenv
 
 
-load_dotenv()
-
 class Settings:
+    load_dotenv()
+
     BOT_TOKEN = getenv('BOT_TOKEN')
     DB_PATH = getenv('DB_PATH')
     OPENWEATHER_API_KEY = getenv('OPENWEATHER_API_KEY')

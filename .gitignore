@@ -1,8 +1,8 @@
-.env
+config/.env
 .idea
 
 __pycache__
 
 database/__pycache__
-database/telebot_database.db
+telebot_database.db
 weather/__pycache__

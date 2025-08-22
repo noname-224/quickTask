@@ -1,241 +1,303 @@
 # Отработка запросов ввода у пользователя
-
 from telebot.types import CallbackQuery, Message
 
-from app.app_enums import TaskAttributeText, MessageUploadMethod
+from database.base import Task
+from database.repositories import TaskRepository
+from domain.enums import TaskAttributeText, MessageUploadMethod, CancelledOperationName, TaskStatus
 from app.bot import bot
-from app.keyboards import cancel_adding_button
-from app.utils import get_task_id, text_for_reply_to_bad_input, \
-    upload_task_window, upload_checklist_window
-from database.db_funcs import get_task, edit_task, add_task
-from helpers.exceptions import UserNotFound
-from helpers.type_hints import TaskId, MessageId
+from app.keyboards import InlineKeyboardCreator
+from utils.helpers import text_for_reply_to_bad_input, get_message_id, get_task_id
+from domain.types import TaskId, MessageId
 
 
-# -----------------------------------------------------------------------------
-def add_new_task(message: Message) -> None:
-    # safely_delete_message_from_chat(message.chat.id, message.id)
+class WindowLoaderService:
+    task_repo = TaskRepository()
 
-    start_msg_id = message.message_id + 1
+    @classmethod
+    def load_checklist(cls, message: Message, upload_method: MessageUploadMethod) -> None:
+        tasks = cls.task_repo.get_all(user_id=message.chat.id)
+        text = "Вот твои задачи.\nНажми чтобы перейти к описанию" if tasks else "У тебя нет задач!"
 
-    bot.send_message(
-        chat_id=message.chat.id,
-        text="Напишите название задачи",
-        reply_markup = cancel_adding_button()
-    )
-    bot.register_next_step_handler(
-        message, lambda msg: __add_new_task_second_step(msg, start_msg_id))
+        if upload_method.value:
+            bot.send_message(
+                chat_id=message.chat.id,
+                text=text,
+                reply_markup=InlineKeyboardCreator.create_checklist_window_buttons(tasks)
+            )
+        else:
+            bot.edit_message_text(
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+                text=text,
+                reply_markup=InlineKeyboardCreator.create_checklist_window_buttons(tasks)
+            )
+
+    @classmethod
+    def load_task(cls, task_id: TaskId, message: Message, upload_method: MessageUploadMethod) -> None:
+        task = cls.task_repo.get_one(task_id)
+
+        if task is not None:
+            mark = "✅" if task.status == TaskStatus.COMPLETED else "❌"
+
+            if upload_method.value:
+                bot.send_message(
+                    chat_id=message.chat.id,
+                    text=f"Название: {task.title} {mark}\n\n"
+                         f"Описание: {task.description}",
+                    reply_markup=InlineKeyboardCreator.create_task_window_buttons(task)
+                )
+            else:
+                bot.edit_message_text(
+                    chat_id=message.chat.id,
+                    message_id=message.message_id,
+                    text=f"Название: {task.title} {mark}\n\n"
+                         f"Описание: {task.description}",
+                    reply_markup=InlineKeyboardCreator.create_task_window_buttons(task)
+                )
+        else:
+            cls.load_checklist(message, MessageUploadMethod.UPDATE)
+
+    @classmethod
+    def load_task_edit(cls, task_id: TaskId, message: Message) -> None:
+        task = cls.task_repo.get_one(task_id=task_id)
+
+        if task is not None:
+            bot.edit_message_text(
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+                text=f"Название: {task.title}\n\n"
+                     f"Описание: {task.description}",
+                reply_markup=InlineKeyboardCreator.create_task_edit_window_buttons(task.id)
+            )
+        else:
+            cls.load_checklist(message, MessageUploadMethod.UPDATE)
 
 
-def __add_new_task_second_step(message: Message, start_msg_id: MessageId) -> None:
-    if message.content_type != 'text' or message.text.startswith('/'):
-        bot.reply_to(
-            message=message,
-            text=text_for_reply_to_bad_input(TaskAttributeText.TITLE)
-        )
-        bot.register_next_step_handler(
-            message, lambda msg: __add_new_task_second_step(msg, start_msg_id))
-        return
+class TaskModifierService:
+    task_repo = TaskRepository()
 
-    title = message.text
-
-    bot.send_message(
-        chat_id=message.chat.id,
-        text="Напишите описание задачи",
-        reply_markup = cancel_adding_button()
-    )
-    bot.register_next_step_handler(
-        message, lambda msg: __add_new_task_final_step(msg, title, start_msg_id))
-
-
-def __add_new_task_final_step(
-        message: Message, title: str, start_msg_id: MessageId) -> None:
-    if message.content_type != 'text' or message.text.startswith('/'):
-        bot.reply_to(
-            message=message,
-            text=text_for_reply_to_bad_input(TaskAttributeText.DESCRIPTION)
-        )
-        bot.register_next_step_handler(
-            message, lambda msg: __add_new_task_final_step(
-                msg, title, start_msg_id))
-        return
-
-    description = message.text
-    try:
-        add_task(title, description, message.chat.id)
-    except UserNotFound:
+    @classmethod
+    def add(cls, message: Message) -> None:
+        start_msg_id = message.message_id + 1
         bot.send_message(
             chat_id=message.chat.id,
-            text="Вы не авторизованы.\n"
-                 "Отправьте команду /start для авторизации"
-        )
-    bot.delete_messages(
-        message.chat.id, list(range(start_msg_id, message.message_id + 1)))
-
-    upload_checklist_window(message, MessageUploadMethod.SEND)
-
-
-# -----------------------------------------------------------------------------
-def edit_task_title(call: CallbackQuery) -> None:
-    # safely_delete_message_from_chat(call.message.chat.id, call.message.id)
-
-    task_id = get_task_id(call.data)
-    task = get_task(task_id)
-    start_msg_id = call.message.message_id + 1
-
-    bot.send_message(
-        chat_id=call.message.chat.id,
-        text=f"Текущее <u><b>название</b></u>: "
-             f"<code>{task.title}</code>\n\n"
-             f"Напишите новое <u><b>название</b></u> задачи",
-        parse_mode="HTML",
-    )
-
-    bot.register_next_step_handler(
-        call.message,
-        lambda msg: __edit_task_title_final_step(msg, task_id, start_msg_id)
-    )
-
-
-def __edit_task_title_final_step(
-        message: Message, task_id: TaskId, start_msg_id: MessageId) -> None:
-    if message.content_type != 'text' or message.text.startswith('/'):
-        bot.reply_to(
-            message=message,
-            text=text_for_reply_to_bad_input(TaskAttributeText.TITLE)
-        )
-        bot.register_next_step_handler(
-            message, lambda msg: __edit_task_title_final_step(msg, task_id, start_msg_id))
-        return
-
-    edit_task(task_id=task_id, title=message.text)
-
-    # ToDo переделать отправку таких сообщений
-    # bot.send_message(
-    #     message.chat.id, "Изменения сохранены")
-
-    bot.delete_messages(
-        message.chat.id,list(range(start_msg_id, message.message_id + 1)))
-
-    upload_task_window(task_id, message, MessageUploadMethod.SEND)
-
-
-# -----------------------------------------------------------------------------
-def edit_task_description(call: CallbackQuery) -> None:
-    # safely_delete_message_from_chat(call.message.chat.id, call.message.id)
-
-    task_id = get_task_id(call.data)
-    task = get_task(task_id)
-    start_msg_id = call.message.message_id + 1
-
-    bot.send_message(
-        chat_id=call.message.chat.id,
-        text=f"Текущее <u><b>описание</b></u>: "
-             f"<code>{task.description}</code>\n\n"
-             f"Напишите новое <u><b>описание</b></u> задачи",
-        parse_mode="HTML",
-    )
-
-    bot.register_next_step_handler(
-        call.message,
-        lambda msg: __edit_task_description_final_step(msg, task_id, start_msg_id)
-    )
-
-
-def __edit_task_description_final_step(
-        message: Message, task_id: TaskId, start_msg_id: MessageId) -> None:
-    if message.content_type != 'text' or message.text.startswith('/'):
-        bot.reply_to(
-            message=message,
-            text=text_for_reply_to_bad_input(TaskAttributeText.DESCRIPTION)
+            text="Напишите название задачи",
+            reply_markup=InlineKeyboardCreator.create_cancel_adding_button(start_msg_id)
         )
         bot.register_next_step_handler(
             message,
-            lambda msg: __edit_task_description_final_step(msg, task_id, start_msg_id)
+            lambda msg: cls.__add_second_step(msg, start_msg_id)
         )
-        return
 
-    edit_task(task_id=task_id, description=message.text)
+    @classmethod
+    def __add_second_step(cls, message: Message, start_msg_id: MessageId) -> None:
+        if message.content_type != 'text' or message.text.startswith('/'):
+            bot.reply_to(
+                message=message,
+                text=text_for_reply_to_bad_input(TaskAttributeText.TITLE)
+            )
+            bot.register_next_step_handler(
+                message,
+                lambda msg: cls.__add_second_step(msg, start_msg_id)
+            )
+            return
 
-    # ToDo переделать отправку таких сообщений
-    # bot.send_message(
-    #     message.chat.id, "Изменения сохранены")
+        title = message.text
 
-    bot.delete_messages(
-        message.chat.id,list(range(start_msg_id, message.message_id + 1)))
-
-    upload_task_window(task_id, message, MessageUploadMethod.SEND)
-
-
-# -----------------------------------------------------------------------------
-def edit_task_all(call: CallbackQuery) -> None:
-    # safely_delete_message_from_chat(call.message.chat.id, call.message.id)
-
-    task_id = get_task_id(call.data)
-    task = get_task(task_id)
-    start_msg_id = call.message.message_id + 1
-
-    bot.send_message(
-        chat_id=call.message.chat.id,
-        text=f"Текущее <u><b>название</b></u>: "
-             f"<code>{task.title}</code>\n\n"
-             f"Напишите новое <u><b>название</b></u> задачи",
-        parse_mode="HTML",
-    )
-
-    bot.register_next_step_handler(
-        call.message,
-        lambda msg: __edit_task_all_next_step(msg, task_id, start_msg_id)
-    )
-
-
-def __edit_task_all_next_step(
-        message: Message, task_id: TaskId, start_msg_id: MessageId) -> None:
-    if message.content_type != 'text' or message.text.startswith('/'):
-        bot.reply_to(
-            message=message,
-            text=text_for_reply_to_bad_input(TaskAttributeText.TITLE)
+        bot.send_message(
+            chat_id=message.chat.id,
+            text="Напишите описание задачи",
+            reply_markup=InlineKeyboardCreator.create_cancel_adding_button(start_msg_id)
         )
         bot.register_next_step_handler(
             message,
-            lambda msg: __edit_task_all_next_step(msg, task_id, start_msg_id)
+            lambda msg: cls.__add_final_step(msg, title, start_msg_id)
         )
-        return
 
-    title = message.text
+    @classmethod
+    def __add_final_step(cls, message: Message, title: str, start_msg_id: MessageId) -> None:
+        if message.content_type != 'text' or message.text.startswith('/'):
+            bot.reply_to(
+                message=message,
+                text=text_for_reply_to_bad_input(TaskAttributeText.DESCRIPTION)
+            )
+            bot.register_next_step_handler(
+                message,
+                lambda msg: cls.__add_final_step(msg, title, start_msg_id)
+            )
+            return
 
-    task = get_task(task_id)
+        description = message.text
 
-    bot.send_message(
-        chat_id=message.chat.id,
-        text=f"Текущее <u><b>описание</b></u>: "
-             f"<code>{task.description}</code>\n\n"
-             f"Напишите новое <u><b>описание</b></u> задачи",
-        parse_mode="HTML",
-    )
+        cls.task_repo.add(
+            title=title,
+            description=description,
+            user_id=message.chat.id
+        )
 
-    bot.register_next_step_handler(
-        message,lambda msg: __edit_task_all_final_step(msg, task_id, start_msg_id, title))
+        # bot.delete_messages(message.chat.id, list(range(start_msg_id, message.get_message_id + 1)))
+        WindowLoaderService.load_checklist(message, MessageUploadMethod.SEND)
 
 
-def __edit_task_all_final_step(
-        message: Message,
-        task_id: TaskId, start_msg_id: MessageId, title: str) -> None:
-    if message.content_type != 'text' or message.text.startswith('/'):
-        bot.reply_to(
-            message=message,
-            text=text_for_reply_to_bad_input(TaskAttributeText.DESCRIPTION)
+    # -----------------------------------------------------------------------------
+    @classmethod
+    def edit_title(cls, call: CallbackQuery) -> None:
+        task_id = get_task_id(call.data)
+        task = cls.task_repo.get_one(task_id)
+        start_msg_id = call.message.message_id + 1
+
+        bot.send_message(
+            chat_id=call.message.chat.id,
+            text=f"Текущее <u><b>название</b></u>: <code>{task.title}</code>\n\n"
+                 f"Напишите новое <u><b>название</b></u> задачи",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardCreator.create_cancel_editing_button(start_msg_id)
         )
         bot.register_next_step_handler(
-            message, lambda msg: __edit_task_all_final_step(msg, task_id, start_msg_id, title))
-        return
+            call.message,
+            lambda msg: cls.__edit_title_final_step(msg, task_id, start_msg_id)
+        )
 
-    edit_task(task_id=task_id, title=title, description=message.text)
+    @classmethod
+    def __edit_title_final_step(cls, message: Message, task_id: TaskId, start_msg_id: MessageId) -> None:
+        if message.content_type != 'text' or message.text.startswith('/'):
+            bot.reply_to(
+                message=message,
+                text=text_for_reply_to_bad_input(TaskAttributeText.TITLE)
+            )
+            bot.register_next_step_handler(
+                message,
+                lambda msg: cls.__edit_title_final_step(msg, task_id, start_msg_id)
+            )
+            return
 
-    # ToDo переделать отправку таких сообщений
-    # bot.send_message(message.chat.id, "Изменения сохранены")
+        title = message.text
+        cls.task_repo.edit(
+            task_id=task_id,
+            title=title
+        )
 
-    bot.delete_messages(
-        message.chat.id,list(range(start_msg_id, message.message_id + 1)))
+        # bot.delete_messages(message.chat.id,list(range(start_msg_id, message.get_message_id + 1)))
+        WindowLoaderService.load_task(task_id, message, MessageUploadMethod.SEND)
 
-    upload_task_window(task_id, message, MessageUploadMethod.SEND)
+
+    # -----------------------------------------------------------------------------
+    @classmethod
+    def edit_description(cls, call: CallbackQuery) -> None:
+        task_id = get_task_id(call.data)
+        task = cls.task_repo.get_one(task_id)
+        start_msg_id = call.message.message_id + 1
+
+        bot.send_message(
+            chat_id=call.message.chat.id,
+            text=f"Текущее <u><b>описание</b></u>: <code>{task.description}</code>\n\n"
+                 f"Напишите новое <u><b>описание</b></u> задачи",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardCreator.create_cancel_editing_button(start_msg_id)
+        )
+        bot.register_next_step_handler(
+            call.message,
+            lambda msg: cls.__edit_description_final_step(msg, task_id, start_msg_id)
+        )
+
+    @classmethod
+    def __edit_description_final_step(cls, message: Message, task_id: TaskId, start_msg_id: MessageId) -> None:
+        if message.content_type != 'text' or message.text.startswith('/'):
+            bot.reply_to(
+                message=message,
+                text=text_for_reply_to_bad_input(TaskAttributeText.DESCRIPTION)
+            )
+            bot.register_next_step_handler(
+                message,
+                lambda msg: cls.__edit_description_final_step(msg, task_id, start_msg_id)
+            )
+            return
+
+        description = message.text
+        cls.task_repo.edit(
+            task_id=task_id,
+            description=description
+        )
+
+        # bot.delete_messages(message.chat.id,list(range(start_msg_id, message.get_message_id + 1)))
+        WindowLoaderService.load_task(task_id, message, MessageUploadMethod.SEND)
+
+
+    # -----------------------------------------------------------------------------
+    @classmethod
+    def edit_all(cls, call: CallbackQuery) -> None:
+        task_id = get_task_id(call.data)
+        task = cls.task_repo.get_one(task_id)
+        start_msg_id = call.message.message_id + 1
+
+        bot.send_message(
+            chat_id=call.message.chat.id,
+            text=f"Текущее <u><b>название</b></u>: <code>{task.title}</code>\n\n"
+                 f"Напишите новое <u><b>название</b></u> задачи",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardCreator.create_cancel_editing_button(start_msg_id)
+        )
+        bot.register_next_step_handler(
+            call.message,
+            lambda msg: cls.__edit_all_second_step(msg, task, start_msg_id)
+        )
+
+    @classmethod
+    def __edit_all_second_step(cls, message: Message, task: Task, start_msg_id: MessageId) -> None:
+        if message.content_type != 'text' or message.text.startswith('/'):
+            bot.reply_to(
+                message=message,
+                text=text_for_reply_to_bad_input(TaskAttributeText.TITLE)
+            )
+            bot.register_next_step_handler(
+                message,
+                lambda msg: cls.__edit_all_second_step(msg, task, start_msg_id)
+            )
+            return
+
+        title = message.text
+
+        bot.send_message(
+            chat_id=message.chat.id,
+            text=f"Текущее <u><b>описание</b></u>: "
+                 f"<code>{task.description}</code>\n\n"
+                 f"Напишите новое <u><b>описание</b></u> задачи",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardCreator.create_cancel_editing_button(start_msg_id)
+        )
+        bot.register_next_step_handler(
+            message,
+            lambda msg: cls.__edit_all_final_step(msg, task, start_msg_id, title)
+        )
+
+    @classmethod
+    def __edit_all_final_step(cls, message: Message, task: Task, start_msg_id: MessageId, title: str) -> None:
+        if message.content_type != 'text' or message.text.startswith('/'):
+            bot.reply_to(
+                message=message,
+                text=text_for_reply_to_bad_input(TaskAttributeText.DESCRIPTION)
+            )
+            bot.register_next_step_handler(
+                message,
+                lambda msg: cls.__edit_all_final_step(msg, task, start_msg_id, title)
+            )
+            return
+
+        description = message.text
+        cls.task_repo.edit(
+            task_id=task.id,
+            title=title,
+            description=description
+        )
+
+        # bot.delete_messages(message.chat.id,list(range(start_msg_id, message.get_message_id + 1)))
+        WindowLoaderService.load_task(task.id, message, MessageUploadMethod.SEND)
+
+
+    # -----------------------------------------------------------------------------
+    @staticmethod
+    def cancel_modify(call: CallbackQuery, cancelled_operation_name: CancelledOperationName) -> None:
+        bot.clear_step_handler_by_chat_id(call.message.chat.id)
+        start_msg_id = get_message_id(call.data)
+        bot.delete_messages(call.message.chat.id, list(range(start_msg_id, start_msg_id + 20)))
+        bot.answer_callback_query(callback_query_id=call.id, text=f"{cancelled_operation_name} отменено")

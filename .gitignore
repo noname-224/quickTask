@@ -1,8 +1,8 @@
-config/.env
-.idea
+/.venv/
+src/config/.env
 
-__pycache__
+/.idea/
 
-database/__pycache__
 telebot_database.db
-weather/__pycache__
+.gitignore
+

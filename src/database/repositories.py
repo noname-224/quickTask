@@ -2,19 +2,14 @@ from datetime import datetime
 
 from sqlalchemy import select, update, delete
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
-from database.base import engine, Task, User
+from database.base import session_factory
+from database.models import User, Task
 from domain.enums import TaskStatus
-# from domain.exceptions import UserNotFound
 from domain.types import UserId, TaskId
 
 
-class SqlalchemyBaseRepository:
-    ...
-
-
-class UserRepository(SqlalchemyBaseRepository):
+class UserRepository:
 
     @staticmethod
     def add_user(user_id: UserId, username: str, first_name: str,
@@ -29,7 +24,7 @@ class UserRepository(SqlalchemyBaseRepository):
         )
 
         try:
-            with Session(engine) as session:
+            with session_factory() as session:
                 session.add(user)
                 session.commit()
         except IntegrityError:
@@ -37,22 +32,22 @@ class UserRepository(SqlalchemyBaseRepository):
 
     @staticmethod
     def get_user_by_id(user_id: UserId) -> User | None:
-        with Session(engine) as session:
+        with session_factory() as session:
             return session.get(User, user_id)
 
 
-class TaskRepository(SqlalchemyBaseRepository):
+class TaskRepository:
 
     @staticmethod
     def add(title: str, description: str, user_id: UserId) -> None:
-        task = Task(title=title, description=description, status_changed_at=datetime.now(), user_id=user_id)
-        with Session(engine) as session:
+        task = Task(title=title, description=description, user_id=user_id)
+        with session_factory() as session:
             session.add(task)
             session.commit()
 
     @staticmethod
     def get_one(task_id: TaskId) -> Task | None:
-        with Session(engine) as session:
+        with session_factory() as session:
             return session.get(Task, task_id)
 
     @staticmethod
@@ -68,7 +63,7 @@ class TaskRepository(SqlalchemyBaseRepository):
             .where(Task.user_id == user_id)
             .order_by(Task.status.desc(), Task.status_changed_at.desc())
         )
-        with Session(engine) as session:
+        with session_factory() as session:
             tasks = session.execute(stmt).all()
             return tasks
 
@@ -79,7 +74,7 @@ class TaskRepository(SqlalchemyBaseRepository):
             .where(Task.id == task_id)
             .values(status=TaskStatus.COMPLETED, status_changed_at=datetime.now())
         )
-        with Session(engine) as session:
+        with session_factory() as session:
             session.execute(stmt)
             session.commit()
 
@@ -90,7 +85,7 @@ class TaskRepository(SqlalchemyBaseRepository):
             .where(Task.id == task_id)
             .values(status=TaskStatus.UNCOMPLETED, status_changed_at=datetime.now())
         )
-        with Session(engine) as session:
+        with session_factory() as session:
             session.execute(stmt)
             session.commit()
 
@@ -100,7 +95,7 @@ class TaskRepository(SqlalchemyBaseRepository):
             delete(Task)
             .where(Task.id == task_id)
         )
-        with Session(engine) as session:
+        with session_factory() as session:
             session.execute(stmt)
             session.commit()
 
@@ -114,6 +109,6 @@ class TaskRepository(SqlalchemyBaseRepository):
                 description=description or Task.description
             )
         )
-        with Session(engine) as session:
+        with session_factory() as session:
             session.execute(stmt)
             session.commit()

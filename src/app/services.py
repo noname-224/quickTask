@@ -1,13 +1,12 @@
-# Отработка запросов ввода у пользователя
-from telebot.types import CallbackQuery, Message
+from telebot.types import Message, CallbackQuery
 
-from database.base import Task
-from database.repositories import TaskRepository
-from domain.enums import TaskAttributeText, MessageUploadMethod, CancelledOperationName, TaskStatus
 from app.bot import bot
 from app.keyboards import InlineKeyboardCreator
-from utils.helpers import text_for_reply_to_bad_input, get_message_id, get_task_id
+from database.models import Task
+from database.repositories import TaskRepository
+from domain.enums import MessageUploadMethod, TaskStatus, TaskAttributeText, CancelledOperationName
 from domain.types import TaskId, MessageId
+from utils.helpers import text_for_reply_to_bad_input, get_task_id, get_message_id
 
 
 class WindowLoaderService:

@@ -1,4 +1,4 @@
-from app.handlers import *
+from app.handlers import bot
 
 
 if __name__ == '__main__':

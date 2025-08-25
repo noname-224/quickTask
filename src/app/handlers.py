@@ -3,7 +3,7 @@ from telebot.types import Message, CallbackQuery
 from database.repositories import UserRepository, TaskRepository
 from domain.enums import MessageUploadMethod, CancelledOperationName
 from app.bot import bot
-from .services import TaskModifierService, WindowLoaderService
+from app.services import TaskModifierService, WindowLoaderService
 from utils.helpers import get_task_id
 # from weather.weather import get_weather_text
 

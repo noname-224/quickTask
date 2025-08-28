@@ -3,7 +3,7 @@ from telebot.types import Message, CallbackQuery
 from app.bot import bot
 from app.keyboards import InlineKeyboardCreator
 from database.models import Task
-from database.repositories import TaskRepository
+from database.repositories import TaskRepository, UserRepository
 from domain.enums import MessageUploadMethod, TaskStatus, TaskAttributeText, CancelledOperationName
 from domain.types import TaskId, MessageId
 from utils.helpers import text_for_reply_to_bad_input, get_task_id, get_message_id
@@ -137,7 +137,6 @@ class TaskModifierService:
         # bot.delete_messages(message.chat.id, list(range(start_msg_id, message.get_message_id + 1)))
         WindowLoaderService.load_checklist(message, MessageUploadMethod.SEND)
 
-
     # -----------------------------------------------------------------------------
     @classmethod
     def edit_title(cls, call: CallbackQuery) -> None:
@@ -179,7 +178,6 @@ class TaskModifierService:
         # bot.delete_messages(message.chat.id,list(range(start_msg_id, message.get_message_id + 1)))
         WindowLoaderService.load_task(task_id, message, MessageUploadMethod.SEND)
 
-
     # -----------------------------------------------------------------------------
     @classmethod
     def edit_description(cls, call: CallbackQuery) -> None:
@@ -220,7 +218,6 @@ class TaskModifierService:
 
         # bot.delete_messages(message.chat.id,list(range(start_msg_id, message.get_message_id + 1)))
         WindowLoaderService.load_task(task_id, message, MessageUploadMethod.SEND)
-
 
     # -----------------------------------------------------------------------------
     @classmethod
@@ -292,6 +289,26 @@ class TaskModifierService:
         # bot.delete_messages(message.chat.id,list(range(start_msg_id, message.get_message_id + 1)))
         WindowLoaderService.load_task(task.id, message, MessageUploadMethod.SEND)
 
+    # -----------------------------------------------------------------------------
+    @classmethod
+    def delete(cls, call: CallbackQuery) -> None:
+        task_id = get_task_id(call.data)
+        cls.task_repo.delete(task_id)
+        WindowLoaderService.load_checklist(call.message, MessageUploadMethod.UPDATE)
+
+    # -----------------------------------------------------------------------------
+    @classmethod
+    def mark_completed(cls, call: CallbackQuery) -> None:
+        task_id = get_task_id(call.data)
+        cls.task_repo.mark_completed(task_id)
+        WindowLoaderService.load_task(task_id, call.message, MessageUploadMethod.UPDATE)
+
+    # -----------------------------------------------------------------------------
+    @classmethod
+    def mark_uncompleted(cls, call: CallbackQuery) -> None:
+        task_id = get_task_id(call.data)
+        cls.task_repo.mark_uncompleted(task_id)
+        WindowLoaderService.load_task(task_id, call.message, MessageUploadMethod.UPDATE)
 
     # -----------------------------------------------------------------------------
     @staticmethod
@@ -300,3 +317,26 @@ class TaskModifierService:
         start_msg_id = get_message_id(call.data)
         bot.delete_messages(call.message.chat.id, list(range(start_msg_id, start_msg_id + 20)))
         bot.answer_callback_query(callback_query_id=call.id, text=f"{cancelled_operation_name} отменено")
+
+
+class UserModifierService:
+    user_repo = UserRepository()
+
+    @classmethod
+    def add(cls, message: Message) -> None:
+        cls.user_repo.add(
+            user_id=message.from_user.id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name,
+            last_name=message.from_user.last_name,
+            is_premium=message.from_user.is_premium,
+        )
+        bot.send_message(
+            chat_id=message.chat.id,
+            text=f"Привет {message.chat.first_name}! "
+                 f"Я твой персональный ToDo-бот.\n\n"
+                 f"Ты можешь управлять мной, посылая эти команды:\n\n"
+                 f"/view_checklist – просмотреть список задач\n"
+                 # f"или отправь название города, "
+                 # f"а я расскажу про погоду в этом регионе"
+        )

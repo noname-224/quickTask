@@ -336,7 +336,7 @@ class UserModifierService:
             text=f"Привет {message.chat.first_name}! "
                  f"Я твой персональный ToDo-бот.\n\n"
                  f"Ты можешь управлять мной, посылая эти команды:\n\n"
-                 f"/view_checklist – просмотреть список задач\n"
+                 f"/send_checklist_window – просмотреть список задач\n"
                  # f"или отправь название города, "
                  # f"а я расскажу про погоду в этом регионе"
         )

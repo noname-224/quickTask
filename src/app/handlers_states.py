@@ -5,7 +5,7 @@ from app.states import BotStateMachine
 from domain.types import message_types
 
 
-# Обработка команды '/view_checklist'
+# Обработка команды '/send_checklist_window'
 @bot.message_handler(func=lambda message: True, content_types=message_types)
 def _show_checklist_window(message: Message) -> None:
     bsm = BotStateMachine(message.from_user.id, message=message)

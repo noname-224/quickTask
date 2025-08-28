@@ -104,7 +104,7 @@ class TaskRepository:
     @staticmethod
     def get_one(task_id: TaskId) -> Task | None:
         with session_factory() as session:
-            return session.get_user(Task, task_id)
+            return session.get(Task, task_id)
 
     @staticmethod
     def get_all(user_id: UserId) -> list[Task] | None:

@@ -7,8 +7,8 @@ from utils.helpers import get_task_id
 # from weather.weather import get_weather_text
 
 
-# Обработка команды '/view_checklist'
-@bot.message_handler(commands=['view_checklist'])
+# Обработка команды '/send_checklist_window'
+@bot.message_handler(commands=['send_checklist_window'])
 def _show_checklist_window(message: Message) -> None:
     WindowLoaderService.load_checklist(message, MessageUploadMethod.SEND)
 

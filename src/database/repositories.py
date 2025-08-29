@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, func, cast, bindparam
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError
 
 from database.base import session_factory
@@ -12,29 +13,84 @@ from domain.types import UserId, TaskId
 class UserRepository:
 
     @staticmethod
-    def add_user(user_id: UserId, username: str, first_name: str,
-                 last_name: str | None = None,
-                 is_premium: bool | None = None) -> None:
+    def add(user_id: UserId, username: str, first_name: str,
+            last_name: str | None = None,
+            is_premium: bool | None = None) -> None:
         user = User(
             id=user_id,
             username=username,
             first_name=first_name,
             last_name=last_name,
-            is_premium=is_premium
+            is_premium=is_premium,
         )
 
         try:
             with session_factory() as session:
                 session.add(user)
                 session.commit()
-        except IntegrityError:
-            ...
+        except IntegrityError: ...
 
     @staticmethod
-    def get_user_by_id(user_id: UserId) -> User | None:
+    def get_user(user_id: UserId) -> User | None:
         with session_factory() as session:
             return session.get(User, user_id)
 
+    @staticmethod
+    def update_state(user_id: UserId, state) -> None:
+        stmt = (
+            update(User)
+            .where(User.id == user_id)
+            .values(
+                state=state,
+            )
+        )
+        with session_factory() as session:
+            session.execute(stmt)
+            session.commit()
+
+    @staticmethod
+    def update_context(user_id: UserId, context) -> None:
+        stmt = (
+            update(User)
+            .where(User.id == user_id)
+            .values(
+                context=func.coalesce(User.context, cast({}, JSONB)).op("||")(
+                    bindparam("context", type_=JSONB)
+                )
+            )
+        )
+        with session_factory() as session:
+            session.execute(stmt, {"context": context})
+            session.commit()
+
+    @staticmethod
+    def update_state_and_context(user_id: UserId, state, context) -> None:
+        stmt = (
+            update(User)
+            .where(User.id == user_id)
+            .values(
+                state=state,
+                context=func.coalesce(User.context, cast({}, JSONB)).op("||")(
+                    bindparam("context", type_=JSONB)
+                )
+            )
+        )
+        with session_factory() as session:
+            session.execute(stmt, {"context": context})
+            session.commit()
+
+    @staticmethod
+    def clear_context(user_id: UserId):
+        stmt = (
+            update(User)
+            .where(User.id == user_id)
+            .values(
+                context=cast({}, JSONB)
+            )
+        )
+        with session_factory() as session:
+            session.execute(stmt)
+            session.commit()
 
 class TaskRepository:
 

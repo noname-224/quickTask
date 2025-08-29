@@ -1,8 +1,0 @@
-/.venv/
-src/config/.env
-
-/.idea/
-
-telebot_database.db
-.gitignore
-

@@ -1,7 +1,7 @@
 from telebot import TeleBot
 
-from config.config import Settings
+from config.config import settings
 
 
-bot = TeleBot(Settings.BOT_TOKEN)
+bot = TeleBot(settings.BOT_TOKEN)
 

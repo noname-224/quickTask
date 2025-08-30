@@ -9,7 +9,7 @@ import urllib.request
 
 from .coordinates import Coordinates
 from .exceptions import ApiServiceError
-from config.config import OPENWEATHER_URL_TEMPLATE
+from src.config.config import OPENWEATHER_URL_TEMPLATE
 
 
 Celsius = int

@@ -2,7 +2,7 @@ from typing import Sequence
 
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from database.base import Task
+from database.models import Task
 from domain.enums import TaskStatus
 from domain.types import TaskId, MessageId
 

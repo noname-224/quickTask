@@ -1,15 +1,13 @@
 from datetime import datetime
+from typing import Any
 
-from sqlalchemy import create_engine
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from domain.enums import TaskStatus
-from config.config import Settings
-
-class Base(DeclarativeBase):
-    pass
+from database.base import Base, engine
+from domain.enums import BotState, TaskStatus
 
 
 class User(Base):
@@ -20,7 +18,16 @@ class User(Base):
     first_name: Mapped[str]
     last_name: Mapped[str | None]
     is_premium: Mapped[bool | None]
-    tasks: Mapped[list["Task"]] = relationship("Task", back_populates="user", uselist=True, lazy="joined")
+    state: Mapped[BotState] = mapped_column(default=BotState.STATE_MANAGER)
+    context: Mapped[dict[str, Any]] = mapped_column(
+        MutableDict.as_mutable(JSONB),
+        nullable=False,
+        default=dict,
+    )
+
+    tasks: Mapped[list["Task"]] = relationship(
+        back_populates="user"
+    )
 
     def __repr__(self):
         return (f"User(id={self.id}, username={self.username}, first_name={self.first_name}, "
@@ -33,17 +40,16 @@ class Task(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str]
     description: Mapped[str]
-    status_changed_at: Mapped[datetime]
     status: Mapped[TaskStatus] = mapped_column(default=TaskStatus.UNCOMPLETED)
+    status_changed_at: Mapped[datetime] = mapped_column(default=datetime.now)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
 
-    user: Mapped["User"] = relationship("User", back_populates="tasks", uselist=False)
+    user: Mapped["User"] = relationship(back_populates="tasks")
 
     def __repr__(self):
-        return (f"Task(id={self.id}, title={self.title}, description={self.description}, status={self.status}, "
-                f"user_id={self.user_id})")
+        return (f"Task(id={self.id}, title={self.title}, description={self.description}, user_id={self.user_id}), "
+                f"status={self.status}, status_changed_at={self.status_changed_at})")
 
 
-engine = create_engine(Settings.DB_PATH, echo=False)
-Base.metadata.drop_all(engine)
+# Base.metadata.drop_all(engine)
 Base.metadata.create_all(engine)

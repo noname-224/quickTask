@@ -5,7 +5,6 @@ from app.states import BotStateMachine
 from domain.types import message_types
 
 
-# Обработка команды '/send_checklist_window'
 @bot.message_handler(func=lambda message: True, content_types=message_types)
 def _show_checklist_window(message: Message) -> None:
     bsm = BotStateMachine(message.from_user.id, message=message)
@@ -18,7 +17,7 @@ def _start_adding_task_by_clicking(call: CallbackQuery) -> None:
     bsm.handle()
 
 
-# @bot.callback_query_handler(func=lambda call: call.data == "add_task_by_clicking")
-# def _start_adding_task_by_clicking(call: CallbackQuery) -> None:
-#     bsm = BotStateMachine(call.message.chat.id, call=call)
-#     bsm.handle()
+@bot.callback_query_handler(func=lambda call: call.data == "add_task_by_clicking")
+def _start_adding_task_by_clicking(call: CallbackQuery) -> None:
+    bsm = BotStateMachine(call.message.chat.id, call=call)
+    bsm.handle()

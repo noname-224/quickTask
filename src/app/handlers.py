@@ -1,14 +1,12 @@
-from telebot.types import Message, CallbackQuery
+from telebot.types import CallbackQuery, Message
 
-from domain.enums import MessageUploadMethod, CancelledOperationName
 from app.bot import bot
-from app.services import TaskModifierService, WindowLoaderService, UserModifierService
+from app.services import TaskModifierService, UserModifierService, WindowLoaderService
+from domain.enums import CancelledOperationName, MessageUploadMethod
 from utils.helpers import get_task_id
-# from weather.weather import get_weather_text
 
 
-# Обработка команды '/send_checklist_window'
-@bot.message_handler(commands=['send_checklist_window'])
+@bot.message_handler(commands=["send_checklist_window"])
 def _show_checklist_window(message: Message) -> None:
     WindowLoaderService.load_checklist(message, MessageUploadMethod.SEND)
 
@@ -18,13 +16,17 @@ def _change_window_to_checklist(call: CallbackQuery) -> None:
     WindowLoaderService.load_checklist(call.message, MessageUploadMethod.UPDATE)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("change_window_to_task_edit_"))
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith("change_window_to_task_edit_")
+)
 def _change_window_to_task_edit(call: CallbackQuery) -> None:
     task_id = get_task_id(call.data)
     WindowLoaderService.load_task_edit(task_id, call.message)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("change_window_to_task_"))
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith("change_window_to_task_")
+)
 def _change_window_to_task(call: CallbackQuery) -> None:
     task_id = get_task_id(call.data)
     WindowLoaderService.load_task(task_id, call.message, MessageUploadMethod.UPDATE)
@@ -35,7 +37,9 @@ def _start_editing_task_title(call: CallbackQuery) -> None:
     TaskModifierService.edit_title(call)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_task_description_"))
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith("edit_task_description_")
+)
 def _start_editing_task_description(call: CallbackQuery) -> None:
     TaskModifierService.edit_description(call)
 
@@ -45,17 +49,23 @@ def _start_editing_task_all(call: CallbackQuery) -> None:
     TaskModifierService.edit_all(call)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("delete_task_from_checklist_"))
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith("delete_task_from_checklist_")
+)
 def _delete_task_from_checklist(call: CallbackQuery) -> None:
     TaskModifierService.delete(call)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("mark_task_completed_"))
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith("mark_task_completed_")
+)
 def _bot_mark_task_completed(call: CallbackQuery) -> None:
     TaskModifierService.mark_completed(call)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("mark_task_uncompleted_"))
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith("mark_task_uncompleted_")
+)
 def _bot_mark_task_uncompleted(call: CallbackQuery) -> None:
     TaskModifierService.mark_uncompleted(call)
 
@@ -70,26 +80,20 @@ def _start_adding_task_by_clicking(call: CallbackQuery) -> None:
     TaskModifierService.add(call.message)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("cancel_task_adding_"))
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith("cancel_task_adding_")
+)
 def _cancel_task_adding(call: CallbackQuery) -> None:
     TaskModifierService.cancel_modify(call, CancelledOperationName.ADDITION)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("cancel_task_editing_"))
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith("cancel_task_editing_")
+)
 def _cancel_task_editing(call: CallbackQuery) -> None:
     TaskModifierService.cancel_modify(call, CancelledOperationName.EDITING)
 
 
-# Обработка команды '/start'
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=["start"])
 def _show_message_start(message: Message) -> None:
     UserModifierService.add(message)
-
-
-# --------------------------------------------------------------------- Обработка запросов про погоду
-# @bot.message_handler(content_types=['text'])
-# def _show_message_weather(message: Message) -> None:
-#     bot.send_message(
-#         chat_id=message.chat.id,
-#         text=get_weather_text(message.text)
-#     )

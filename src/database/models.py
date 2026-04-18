@@ -25,13 +25,13 @@ class User(Base):
         default=dict,
     )
 
-    tasks: Mapped[list["Task"]] = relationship(
-        back_populates="user"
-    )
+    tasks: Mapped[list["Task"]] = relationship(back_populates="user")
 
     def __repr__(self):
-        return (f"User(id={self.id}, username={self.username}, first_name={self.first_name}, "
-                f"last_name={self.last_name}, is_premium={self.is_premium})")
+        return (
+            f"User(id={self.id}, username={self.username}, first_name={self.first_name}, "
+            f"last_name={self.last_name}, is_premium={self.is_premium})"
+        )
 
 
 class Task(Base):
@@ -47,8 +47,10 @@ class Task(Base):
     user: Mapped["User"] = relationship(back_populates="tasks")
 
     def __repr__(self):
-        return (f"Task(id={self.id}, title={self.title}, description={self.description}, user_id={self.user_id}), "
-                f"status={self.status}, status_changed_at={self.status_changed_at})")
+        return (
+            f"Task(id={self.id}, title={self.title}, description={self.description}, user_id={self.user_id}), "
+            f"status={self.status}, status_changed_at={self.status_changed_at})"
+        )
 
 
 # Base.metadata.drop_all(engine)

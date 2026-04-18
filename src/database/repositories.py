@@ -1,21 +1,25 @@
 from datetime import datetime
 
-from sqlalchemy import select, update, delete, func, cast, bindparam
+from sqlalchemy import bindparam, cast, delete, func, select, update
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError
 
 from database.base import session_factory
-from database.models import User, Task
+from database.models import Task, User
 from domain.enums import TaskStatus
-from domain.types import UserId, TaskId
+from domain.types import TaskId, UserId
 
 
 class UserRepository:
 
     @staticmethod
-    def add(user_id: UserId, username: str, first_name: str,
-            last_name: str | None = None,
-            is_premium: bool | None = None) -> None:
+    def add(
+        user_id: UserId,
+        username: str,
+        first_name: str,
+        last_name: str | None = None,
+        is_premium: bool | None = None,
+    ) -> None:
         user = User(
             id=user_id,
             username=username,
@@ -28,7 +32,8 @@ class UserRepository:
             with session_factory() as session:
                 session.add(user)
                 session.commit()
-        except IntegrityError: ...
+        except IntegrityError:
+            ...
 
     @staticmethod
     def get_user(user_id: UserId) -> User | None:
@@ -72,7 +77,7 @@ class UserRepository:
                 state=state,
                 context=func.coalesce(User.context, cast({}, JSONB)).op("||")(
                     bindparam("context", type_=JSONB)
-                )
+                ),
             )
         )
         with session_factory() as session:
@@ -81,16 +86,11 @@ class UserRepository:
 
     @staticmethod
     def clear_context(user_id: UserId):
-        stmt = (
-            update(User)
-            .where(User.id == user_id)
-            .values(
-                context=cast({}, JSONB)
-            )
-        )
+        stmt = update(User).where(User.id == user_id).values(context=cast({}, JSONB))
         with session_factory() as session:
             session.execute(stmt)
             session.commit()
+
 
 class TaskRepository:
 
@@ -114,7 +114,7 @@ class TaskRepository:
                 Task.title,
                 Task.description,
                 Task.status_changed_at,
-                Task.status
+                Task.status,
             )
             .where(Task.user_id == user_id)
             .order_by(Task.status.desc(), Task.status_changed_at.desc())
@@ -147,10 +147,7 @@ class TaskRepository:
 
     @staticmethod
     def delete(task_id: TaskId) -> None:
-        stmt = (
-            delete(Task)
-            .where(Task.id == task_id)
-        )
+        stmt = delete(Task).where(Task.id == task_id)
         with session_factory() as session:
             session.execute(stmt)
             session.commit()
@@ -161,8 +158,7 @@ class TaskRepository:
             update(Task)
             .where(Task.id == task_id)
             .values(
-                title=title or Task.title,
-                description=description or Task.description
+                title=title or Task.title, description=description or Task.description
             )
         )
         with session_factory() as session:
